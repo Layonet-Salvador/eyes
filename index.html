@@ -4,363 +4,456 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#000000">
     
-    <title>Robot AI - TecNM Iztapalapa III</title>
+    <title>Robot AI V4 - TecNM Iztapalapa III</title>
 
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.11.0/dist/tf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.0.7/dist/blazeface.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection@0.0.3/dist/face-landmarks-detection.min.js"></script>
 
     <style>
+        /* --- VARIABLES DE COLOR DINÁMICAS --- */
+        :root {
+            --main-color: #00ff9d; /* Verde por defecto */
+            --glow-shadow: rgba(0, 255, 157, 0.3);
+        }
+
         /* --- ESTILOS GENERALES --- */
         html, body {
             background-color: #000;
             color: white;
-            margin: 0;
-            padding: 0;
-            /* Usamos 100dvh para evitar problemas con la barra de navegación móvil */
-            height: 100dvh; 
-            width: 100vw;
+            margin: 0; padding: 0;
+            height: 100dvh; width: 100vw; /* 100dvh para móviles modernos */
             font-family: 'Segoe UI', system-ui, sans-serif;
-            overflow: hidden; /* Bloquea el scroll elástico */
+            overflow: hidden;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            touch-action: none; /* Desactiva gestos táctiles por defecto */
+            touch-action: none;
         }
 
-        /* --- PANTALLA 1: BIENVENIDA --- */
-        #intro-screen {
+        /* --- PANTALLA 0: CONFIGURACIÓN INICIAL --- */
+        #config-screen {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #0a0a0a;
+            z-index: 300; /* Encima de todo */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .config-section { margin-bottom: 30px; text-align: center; }
+        .config-title { font-size: 1.1rem; color: #888; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px;}
+
+        /* Selector de Color */
+        .color-options { display: flex; gap: 15px; justify-content: center; }
+        .color-btn {
+            width: 50px; height: 50px;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .color-btn.selected { border-color: white; transform: scale(1.1); }
+        .c-green { background: #00ff9d; box-shadow: 0 0 15px #00ff9d;}
+        .c-red { background: #ff0055; box-shadow: 0 0 15px #ff0055;}
+        .c-blue { background: #00ccff; box-shadow: 0 0 15px #00ccff;}
+
+        /* Selector de Modo */
+        .mode-select {
+            padding: 10px 20px;
+            background: #222;
+            color: white;
+            border: 1px solid #444;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+
+        .btn-continue {
+            background: var(--main-color);
+            color: #000;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            border-radius: 30px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        /* --- PANTALLA 1: BRANDING (TecNM) --- */
+        #intro-screen {
+            display: none; /* Oculto hasta configurar */
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
             background: linear-gradient(180deg, #0a0a0a 0%, #1a1a1a 100%);
             z-index: 200;
-            display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             text-align: center;
-            padding: 20px;
-            box-sizing: border-box;
         }
-
-        .tecnm-header {
-            margin-bottom: 50px;
-            animation: fadeIn 2s ease-in;
-        }
-
-        .tecnm-title {
-            font-size: 1rem;
-            color: #888;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-        }
-
+        .tecnm-title { font-size: 1rem; color: #888; text-transform: uppercase; }
         .campus-title {
-            font-size: 1.5rem;
-            color: #00ff9d;
-            font-weight: 800;
-            margin-top: 10px;
-            text-shadow: 0 0 20px rgba(0, 255, 157, 0.5);
+            font-size: 1.5rem; color: var(--main-color);
+            font-weight: 800; margin-top: 10px;
+            text-shadow: 0 0 20px var(--glow-shadow);
         }
-
-        .btn-select {
+        .btn-start-device {
             background: transparent;
-            border: 2px solid #00ff9d;
-            color: #00ff9d;
-            padding: 18px 40px;
-            font-size: 1.1rem;
-            border-radius: 50px; /* Botones redondeados modernos */
-            cursor: pointer;
-            transition: transform 0.2s, background 0.2s;
-            text-transform: uppercase;
-            font-weight: bold;
-            margin: 10px 0;
-            width: 80%;
-            max-width: 300px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-
-        .btn-select:active {
-            background: #00ff9d;
-            color: #000;
-            transform: scale(0.95);
+            border: 2px solid var(--main-color);
+            color: var(--main-color);
+            padding: 18px 40px; font-size: 1.1rem; border-radius: 50px;
+            cursor: pointer; margin: 10px 0; width: 80%; max-width: 300px;
+            font-weight: bold; text-transform: uppercase;
         }
 
         /* --- PANTALLA 2: CARGA --- */
         #loading-screen {
             display: none;
-            position: absolute;
-            z-index: 150;
-            width: 100%;
-            height: 100%;
-            background: #000;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
+            position: absolute; z-index: 150;
+            width: 100%; height: 100%; background: #000;
+            flex-direction: column; justify-content: center; align-items: center;
         }
-
         .loader-ring {
-            width: 50px;
-            height: 50px;
-            border: 4px solid #333;
-            border-top: 4px solid #00ff9d;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 20px;
+            width: 50px; height: 50px;
+            border: 4px solid #333; border-top: 4px solid var(--main-color);
+            border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px;
         }
-
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
         /* --- PANTALLA 3: ROBOT --- */
         #robot-container {
             display: none;
-            width: 100%;
-            height: 100%;
-            position: relative;
-            z-index: 10;
-            /* Flex para centrar los ojos */
-            display: flex; /* Flex oculto por defecto, se activa en JS */
-            align-items: center;
-            justify-content: center;
+            width: 100%; height: 100%;
+            position: relative; z-index: 10;
+            align-items: center; justify-content: center;
         }
 
-        .robot-face {
-            display: flex;
-            gap: 6vmin;
-        }
+        .robot-face { display: flex; gap: 6vmin; position: relative;}
 
         .eye {
-            width: 40vmin; /* Ojos más grandes para impacto */
-            height: 40vmin;
-            max-width: 350px;
-            max-height: 350px;
+            width: 40vmin; height: 40vmin;
+            max-width: 350px; max-height: 350px;
             background: radial-gradient(circle at 30% 30%, #222, #000);
-            border: 0.8vmin solid #00ff9d;
+            border: 0.8vmin solid var(--main-color);
             border-radius: 50%;
-            box-shadow: 0 0 40px rgba(0, 255, 157, 0.3), inset 0 0 30px rgba(0, 255, 157, 0.1);
-            position: relative;
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            box-shadow: 0 0 40px var(--glow-shadow), inset 0 0 30px rgba(0,0,0,0.5);
+            position: relative; overflow: hidden;
+            display: flex; justify-content: center; align-items: center;
+            transition: all 0.3s ease;
         }
 
         .pupil {
-            width: 30%;
-            height: 30%;
-            background: #fff;
-            border-radius: 50%;
-            box-shadow: 0 0 15px #fff, 0 0 50px #00ff9d;
-            position: absolute;
-            transition: transform 0.08s ease-out; /* Respuesta rápida */
+            width: 30%; height: 30%;
+            background: #fff; border-radius: 50%;
+            box-shadow: 0 0 15px #fff, 0 0 50px var(--main-color);
+            position: absolute; transition: transform 0.1s ease-out;
         }
 
-        .eyelid {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 0%;
-            background: #000;
-            z-index: 5;
-            animation: blink 5s infinite;
+        /* Párpados para animación de sonrisa */
+        .eyelid-top, .eyelid-bottom {
+            position: absolute; left: 0; width: 100%;
+            background: #000; z-index: 5;
+            transition: height 0.3s ease-in-out;
         }
-        @keyframes blink { 0%, 90%, 100% { height: 0%; } 95% { height: 100%; } }
+        .eyelid-top { top: 0; height: 0%; }
+        .eyelid-bottom { bottom: 0; height: 0%; }
 
-        /* Botón pequeño para pantalla completa manual si falla automático */
-        #btn-fullscreen {
+        /* Estado Feliz (Smile detected) */
+        .robot-face.happy .eyelid-bottom { height: 45%; } /* Ojo se entorna desde abajo */
+
+        /* --- BOTONES DISCRETOS (TOP RIGHT) --- */
+        .top-controls {
             position: absolute;
-            top: 20px;
-            right: 20px;
-            background: rgba(0,0,0,0.5);
-            border: 1px solid #333;
-            color: #555;
-            width: 30px;
-            height: 30px;
-            border-radius: 4px;
+            top: 20px; right: 20px;
             z-index: 500;
-            cursor: pointer;
-            display: none; /* Se muestra solo si no estamos en fullscreen */
+            display: flex; gap: 10px;
         }
+        .discrete-btn {
+            background: rgba(0,0,0,0.6);
+            border: 1px solid #444; color: #888;
+            width: 35px; height: 35px;
+            border-radius: 6px; cursor: pointer;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 1.2rem;
+        }
+        .discrete-btn.active-debug { border-color: var(--main-color); color: var(--main-color); }
 
-        /* Video Oculto */
-        #video-hidden { position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px; }
+        /* Debug Canvas y Video Oculto */
+        #debug-canvas {
+            position: absolute; bottom: 20px; right: 20px;
+            width: 120px; border: 1px solid var(--main-color);
+            display: none; z-index: 100; background: #000; transform: scaleX(-1);
+        }
+        #video-hidden { position: absolute; opacity: 0; pointer-events: none; }
 
     </style>
 </head>
 <body>
 
+    <div id="config-screen">
+        <div class="tecnm-title">Configuración Inicial</div>
+        <h2 style="margin-top:0;">PERSONALIZA TU ROBOT</h2>
+
+        <div class="config-section">
+            <div class="config-title">1. Color de Ojos</div>
+            <div class="color-options">
+                <div class="color-btn c-green selected" onclick="selectColor('#00ff9d', this)"></div>
+                <div class="color-btn c-red" onclick="selectColor('#ff0055', this)"></div>
+                <div class="color-btn c-blue" onclick="selectColor('#00ccff', this)"></div>
+            </div>
+        </div>
+
+        <div class="config-section">
+            <div class="config-title">2. Modo de Reconocimiento</div>
+            <select id="modeSelect" class="mode-select">
+                <option value="basic">Básico (Solo Seguimiento)</option>
+                <option value="smile">Avanzado (Detectar Sonrisas)</option>
+            </select>
+        </div>
+
+        <button class="btn-continue" onclick="finishConfig()">CONTINUAR</button>
+    </div>
+
+
     <div id="intro-screen">
-        <div class="tecnm-header">
+        <div style="margin-bottom: 40px;">
             <div class="tecnm-title">Desarrollado por</div>
             <div class="tecnm-title" style="font-weight:bold; margin-top:5px; color:white;">Tecnológico Nacional de México</div>
             <div class="campus-title">Iztapalapa III</div>
         </div>
-
-        <button class="btn-select" onclick="startSystem('mobile')">
-            📱 Celular / Tablet
-        </button>
-        <button class="btn-select" onclick="startSystem('pc')">
-            💻 Computadora
-        </button>
-        
-        <p style="margin-top: 30px; font-size: 0.8rem; color: #555;">
-            *Recomendado: Usar Chrome o Safari actualizado.
-        </p>
+        <button class="btn-start-device" onclick="startSystem('mobile')">📱 Iniciar en Celular</button>
+        <button class="btn-start-device" onclick="startSystem('pc')">💻 Iniciar en PC</button>
     </div>
 
-    <div id="loading-screen" style="display:none;">
+
+    <div id="loading-screen">
         <div class="loader-ring"></div>
-        <h3 id="loading-text" style="color:#00ff9d; font-size:1rem; letter-spacing:1px;">CONECTANDO CÁMARA...</h3>
+        <h3 id="loading-text" style="color:var(--main-color); font-size:0.9rem; letter-spacing:1px;">CARGANDO CEREBRO ARTIFICIAL...</h3>
+        <p style="font-size: 0.7rem; opacity: 0.6;">Esto puede tardar unos segundos la primera vez.</p>
     </div>
 
-    <div id="robot-container" style="display:none;">
-        <div class="robot-face">
-            <div class="eye"><div class="eyelid"></div><div class="pupil" id="p-left"></div></div>
-            <div class="eye"><div class="eyelid"></div><div class="pupil" id="p-right"></div></div>
+
+    <div id="robot-container">
+        <div class="robot-face" id="robot-face">
+            <div class="eye">
+                <div class="eyelid-top"></div><div class="eyelid-bottom"></div>
+                <div class="pupil" id="p-left"></div>
+            </div>
+            <div class="eye">
+                <div class="eyelid-top"></div><div class="eyelid-bottom"></div>
+                <div class="pupil" id="p-right"></div>
+            </div>
         </div>
-        <button id="btn-fullscreen" onclick="forceFullScreen()">⛶</button>
+
+        <div class="top-controls">
+            <button class="discrete-btn" id="btn-debug" onclick="toggleDebug()">📷</button>
+            <button class="discrete-btn" onclick="forceFullScreen()">⛶</button>
+        </div>
     </div>
 
     <video id="video-hidden" playsinline muted autoplay></video>
+    <canvas id="debug-canvas"></canvas>
 
     <script>
-        // --- CONFIGURACIÓN ---
+        // --- VARIABLES GLOBALES ---
         let model = null;
         let video = document.getElementById('video-hidden');
         let pupilLeft = document.getElementById('p-left');
         let pupilRight = document.getElementById('p-right');
+        let robotFace = document.getElementById('robot-face');
+        let debugCanvas = document.getElementById('debug-canvas');
+        let ctxDebug = debugCanvas.getContext('2d');
         
-        // Elementos UI
-        const introScreen = document.getElementById('intro-screen');
-        const loadingScreen = document.getElementById('loading-screen');
-        const robotContainer = document.getElementById('robot-container');
-        const loadingText = document.getElementById('loading-text');
+        // Estado
+        let selectedColor = '#00ff9d';
+        let detectSmiles = false;
+        let isDebug = false;
+        let isSystemRunning = false;
 
-        // --- INICIO DEL SISTEMA ---
-        async function startSystem(deviceType) {
-            // 1. Intentar Pantalla Completa (Full Screen API)
+        // --- 1. LÓGICA DE CONFIGURACIÓN ---
+        function selectColor(color, element) {
+            selectedColor = color;
+            // Actualizar UI visualmente
+            document.querySelectorAll('.color-btn').forEach(btn => btn.classList.remove('selected'));
+            element.classList.add('selected');
+            // Actualizar variables CSS dinámicamente
+            document.documentElement.style.setProperty('--main-color', color);
+            document.documentElement.style.setProperty('--glow-shadow', color + '4d'); // 4d es ~30% opacidad hex
+        }
+
+        function finishConfig() {
+            detectSmiles = document.getElementById('modeSelect').value === 'smile';
+            document.getElementById('config-screen').style.display = 'none';
+            document.getElementById('intro-screen').style.display = 'flex';
             forceFullScreen();
+        }
 
-            // 2. Cambio de Interfaz
-            introScreen.style.display = 'none';
-            loadingScreen.style.display = 'flex'; // Flex para centrar
+        // --- 2. INICIO DEL SISTEMA ---
+        async function startSystem(deviceType) {
+            document.getElementById('intro-screen').style.display = 'none';
+            document.getElementById('loading-screen').style.display = 'flex';
+            const loadingText = document.getElementById('loading-text');
 
-            // 3. Configurar Cámara
-            // En móviles forzamos resolución vertical para mejor rendimiento
-            let widthIdeal = deviceType === 'mobile' ? 480 : 640;
-            let heightIdeal = deviceType === 'mobile' ? 640 : 480;
-
+            // Configurar cámara según dispositivo
             let constraints = {
                 audio: false,
                 video: {
-                    facingMode: 'user', // Cámara frontal
-                    width: { ideal: widthIdeal },
-                    height: { ideal: heightIdeal }
+                    facingMode: 'user',
+                    width: { ideal: deviceType === 'mobile' ? 480 : 640 },
+                    height: { ideal: deviceType === 'mobile' ? 640 : 480 }
                 }
             };
 
             try {
-                // PASO A: Pedir Cámara
-                loadingText.innerText = "SOLICITANDO ACCESO A CÁMARA...";
+                // A. Cámara
+                loadingText.innerText = "CONECTANDO SENSORES VISUALES...";
                 const stream = await navigator.mediaDevices.getUserMedia(constraints);
                 video.srcObject = stream;
-                
-                await new Promise((resolve) => {
-                    video.onloadedmetadata = () => {
-                        video.play();
-                        resolve();
-                    };
-                });
+                await new Promise(resolve => video.onloadedmetadata = resolve);
+                video.play();
 
-                // PASO B: Cargar IA
-                loadingText.innerText = "CARGANDO RED NEURONAL...";
-                model = await blazeface.load(); // Cargar modelo TensorFlow
+                // B. Cargar Modelo IA (FaceMesh - Pesado pero preciso)
+                loadingText.innerText = "CARGANDO RED NEURONAL (FACE MESH)...";
+                // Usamos el modelo "mediapipe-facemesh" que es más robusto para expresiones
+                model = await faceLandmarksDetection.load(
+                    faceLandmarksDetection.SupportedPackages.mediapipeFacemesh,
+                    { maxFaces: 1 } // Solo una cara para optimizar
+                );
+
+                loadingText.innerText = "SISTEMA ONLINE";
                 
-                loadingText.innerText = "SISTEMAS ACTIVOS";
-                
-                // PASO C: Mostrar Robot
+                // C. Mostrar Robot
                 setTimeout(() => {
-                    loadingScreen.style.display = 'none';
-                    robotContainer.style.display = 'flex'; // Mostrar contenedor
-                    document.getElementById('btn-fullscreen').style.display = 'block';
-                    detectFace(); // Iniciar bucle
-                }, 500);
+                    document.getElementById('loading-screen').style.display = 'none';
+                    document.getElementById('robot-container').style.display = 'flex';
+                    isSystemRunning = true;
+                    detectFrame(); // Iniciar bucle principal
+                }, 800);
 
             } catch (err) {
                 console.error(err);
-                loadingText.innerText = "ERROR: PERMISO DENEGADO";
-                loadingText.style.color = "red";
-                alert("No se pudo acceder a la cámara. Revisa que el sitio sea HTTPS y tengas permisos.");
+                loadingText.innerText = "ERROR CRÍTICO DE CÁMARA";
+                loadingText.style.color = "#ff0055";
+                alert("Error: Asegúrate de usar HTTPS y dar permisos de cámara.");
             }
         }
 
-        // --- BUCLE DE DETECCIÓN ---
-        async function detectFace() {
-            // Predicción ultrarrápida (sin tensores complejos)
-            const predictions = await model.estimateFaces(video, false);
+        // --- 3. BUCLE PRINCIPAL DE IA ---
+        async function detectFrame() {
+            if (!isSystemRunning) return;
+
+            // Inferencia de la IA
+            const predictions = await model.estimateFaces({ input: video });
+
+            // Debugging visual
+            if (isDebug) {
+                debugCanvas.width = video.videoWidth;
+                debugCanvas.height = video.videoHeight;
+                ctxDebug.drawImage(video, 0, 0);
+            }
 
             if (predictions.length > 0) {
-                // Tomamos coordenadas
-                const start = predictions[0].topLeft;
-                const end = predictions[0].bottomRight;
-                const size = [end[0] - start[0], end[1] - start[1]];
+                const face = predictions[0];
                 
-                // Centro
-                const faceX = start[0] + (size[0] / 2);
-                const faceY = start[1] + (size[1] / 2);
-
+                // --- A. SEGUIMIENTO DE OJOS (Usando Bounding Box) ---
+                const start = face.boundingBox.topLeft;
+                const end = face.boundingBox.bottomRight;
+                const faceX = start[0] + ((end[0] - start[0]) / 2);
+                const faceY = start[1] + ((end[1] - start[1]) / 2);
                 moveEyes(faceX, faceY);
+
+                // --- B. DETECCIÓN DE SONRISA (Usando Mesh Landmarks) ---
+                if (detectSmiles) {
+                    checkSmile(face.scaledMesh);
+                }
+
+                // Dibujar debug box
+                if (isDebug) {
+                    ctxDebug.strokeStyle = selectedColor;
+                    ctxDebug.lineWidth = 4;
+                    ctxDebug.strokeRect(start[0], start[1], end[0] - start[0], end[1] - start[1]);
+                }
+
             } else {
-                resetEyes();
+                resetRobot();
             }
 
-            requestAnimationFrame(detectFace);
+            requestAnimationFrame(detectFrame);
         }
 
-        // --- MATEMÁTICAS DE MOVIMIENTO ---
+        // --- 4. LÓGICA DE SONRISA ---
+        function checkSmile(mesh) {
+            // Índices clave de FaceMesh para la boca:
+            // 61: Comisura izquierda, 291: Comisura derecha
+            // 0: Labio superior central, 17: Labio inferior central
+            const leftCorner = mesh[61];
+            const rightCorner = mesh[291];
+            const upperLip = mesh[0];
+            const lowerLip = mesh[17];
+
+            // Ancho de la boca
+            const mouthWidth = Math.hypot(rightCorner[0] - leftCorner[0], rightCorner[1] - leftCorner[1]);
+            // Centro de la boca en Y
+            const mouthCenterY = (upperLip[1] + lowerLip[1]) / 2;
+            // Altura promedio de las comisuras en Y
+            const cornersY = (leftCorner[1] + rightCorner[1]) / 2;
+
+            // Cálculo simple de sonrisa:
+            // Si las comisuras están significativamente más altas (menor valor Y) que el centro de la boca.
+            // El umbral (0.1) es experimental, puede requerir ajustes.
+            const smileRatio = (mouthCenterY - cornersY) / mouthWidth;
+            
+            // Umbral de sensibilidad para considerar que es una sonrisa
+            const smileThreshold = 0.1; 
+
+            if (smileRatio > smileThreshold) {
+                robotFace.classList.add('happy'); // Activa la clase CSS que mueve los párpados inferiores
+            } else {
+                robotFace.classList.remove('happy');
+            }
+        }
+
+        // --- 5. MOVIMIENTO Y RESET ---
         function moveEyes(faceX, faceY) {
             const width = video.videoWidth;
             const height = video.videoHeight;
-            const limit = 30; // Rango de movimiento de la pupila (%)
+            const limit = 30; // Rango de movimiento %
 
-            // Mapeo de coordenadas (Espejo en X)
+            // Normalizar y Espejo en X
             let xPos = -((faceX / width) * 2 - 1);
             let yPos = (faceY / height) * 2 - 1;
 
-            // Clamping (Restringir movimiento al globo ocular)
+            // Clamping
             let moveX = Math.max(Math.min(xPos * limit, limit), -limit);
             let moveY = Math.max(Math.min(yPos * limit, limit), -limit);
 
-            // Aplicar transformación
             pupilLeft.style.transform = `translate(${moveX}vmin, ${moveY}vmin)`;
             pupilRight.style.transform = `translate(${moveX}vmin, ${moveY}vmin)`;
         }
 
-        function resetEyes() {
+        function resetRobot() {
             pupilLeft.style.transform = `translate(0, 0)`;
             pupilRight.style.transform = `translate(0, 0)`;
+            robotFace.classList.remove('happy');
         }
 
-        // --- FUNCIÓN PANTALLA COMPLETA ---
-        function forceFullScreen() {
+        // --- 6. UTILIDADES (Debug y Fullscreen) ---
+        window.toggleDebug = function() {
+            isDebug = !isDebug;
+            debugCanvas.style.display = isDebug ? 'block' : 'none';
+            document.getElementById('btn-debug').classList.toggle('active-debug');
+        }
+
+        window.forceFullScreen = function() {
             let elem = document.documentElement;
-            if (elem.requestFullscreen) {
-                elem.requestFullscreen().catch(err => {
-                    console.log("Full screen denegado o no soportado: " + err.message);
-                });
-            } else if (elem.webkitRequestFullscreen) { /* Safari */
-                elem.webkitRequestFullscreen();
-            } else if (elem.msRequestFullscreen) { /* IE11 */
-                elem.msRequestFullscreen();
-            }
+            if (elem.requestFullscreen) elem.requestFullscreen().catch(e=>{});
+            else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen();
         }
     </script>
 </body>
